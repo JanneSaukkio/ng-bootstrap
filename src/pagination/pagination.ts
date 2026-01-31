@@ -43,8 +43,6 @@ export interface NgbPaginationLinkContext {
 /**
  * A context for the `NgbPaginationNumber` link template in case you want to override one.
  *
- * Extends `NgbPaginationLinkContext`.
- *
  * @since 4.1.0
  */
 export interface NgbPaginationNumberContext extends NgbPaginationLinkContext {

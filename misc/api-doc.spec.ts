@@ -186,6 +186,7 @@ describe('APIDocVisitor', () => {
 
 		assert.strictEqual(interfaceDocs.className, 'NgbModalOptions');
 		assert.strictEqual(interfaceDocs.description, '<p>Represent options available when opening new modal windows.</p>');
+		assert.strictEqual(interfaceDocs.baseClassNames.length, 0)
 		assert.strictEqual(interfaceDocs.properties.length, 3);
 
 		assert.strictEqual(interfaceDocs.properties[0].name, 'backdrop');
@@ -216,6 +217,7 @@ describe('APIDocVisitor', () => {
 
 		assert.strictEqual(interfaceDocs.className, 'SomeInterface');
 		assert.strictEqual(interfaceDocs.description, '<p>Some interface</p>');
+		assert.strictEqual(interfaceDocs.baseClassNames.length, 0);
 		assert.strictEqual(interfaceDocs.methods.length, 1);
 
 		assert.strictEqual(interfaceDocs.methods[0].name, 'foo');
@@ -223,11 +225,29 @@ describe('APIDocVisitor', () => {
 		assert.strictEqual(interfaceDocs.methods[0].returnType, 'void');
 	});
 
+	it('should extract extends documentation from interfaces', () => {
+		const { BackdropOptions, KeyboardOptions, AllOptions, OtherOptions } = apiDoc(['./misc/api-doc-test-cases/extended-interface.ts']);
+
+		assert.strictEqual(BackdropOptions.className, 'BackdropOptions');
+		assert.strictEqual(BackdropOptions.baseClassNames.length, 0);
+		assert.strictEqual(KeyboardOptions.className, 'KeyboardOptions');
+		assert.strictEqual(KeyboardOptions.baseClassNames.length, 0);
+
+		assert.strictEqual(AllOptions.className, 'AllOptions');
+		assert.strictEqual(AllOptions.baseClassNames.length, 2);
+		assert.strictEqual(AllOptions.baseClassNames[0], 'BackdropOptions');
+		assert.strictEqual(AllOptions.baseClassNames[1], 'KeyboardOptions');
+
+		assert.strictEqual(OtherOptions.className, 'OtherOptions');
+		assert.strictEqual(OtherOptions.baseClassNames.length, 0);
+	});
+
 	it('should extract documentation from documented classes', () => {
 		const classDocs = apiDoc(['./misc/api-doc-test-cases/class-with-doc.ts']).DocumentedFoo;
 
 		assert.strictEqual(classDocs.className, 'DocumentedFoo');
 		assert.strictEqual(classDocs.description, '<p>This is a documented foo</p>');
+		assert.strictEqual(classDocs.baseClassNames.length, 0);
 
 		assert.strictEqual(classDocs.properties.length, 2);
 

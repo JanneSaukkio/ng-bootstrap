@@ -3,6 +3,7 @@ export interface ClassDesc {
 	type: string;
 	fileName: string;
 	className: string;
+	baseClassNames?: string[];
 	description: string;
 	deprecated?: VersionDesc;
 	since?: VersionDesc;

@@ -28,6 +28,8 @@
 	}
 	<p class="lead" [innerHTML]="apiDocs().description"></p>
 
+	<ngbd-api-docs-extends [classNames]="apiDocs().baseClassNames" />
+
 	@if (apiDocs().properties && apiDocs().properties.length) {
 		<section>
 			<h4>Properties</h4>

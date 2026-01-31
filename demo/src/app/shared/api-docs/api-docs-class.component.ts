@@ -5,6 +5,7 @@ import { AnalyticsService } from '../../services/analytics.service';
 import { RouterLink } from '@angular/router';
 import { NgbdApiDocsBadge } from './api-docs-badge.component';
 import { COMPONENT_DATA } from '../../tokens';
+import { NgbdApiDocsExtends } from './api-docs-extends.component';
 
 /**
  * Displays the API docs of a class, which is not a directive.
@@ -14,7 +15,7 @@ import { COMPONENT_DATA } from '../../tokens';
 @Component({
 	selector: 'ngbd-api-docs-class',
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [RouterLink, NgbdApiDocsBadge],
+	imports: [RouterLink, NgbdApiDocsBadge, NgbdApiDocsExtends],
 	templateUrl: './api-docs-class.component.html',
 })
 export class NgbdApiDocsClass {

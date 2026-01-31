@@ -9,9 +9,11 @@ import {
 	getCombinedModifierFlags,
 	getDecorators,
 	getJSDocTags,
+	HeritageClause,
 	InterfaceDeclaration,
 	isCallExpression,
 	isClassDeclaration,
+	isExpressionWithTypeArguments,
 	isGetAccessor,
 	isIdentifier,
 	isInterfaceDeclaration,
@@ -33,6 +35,7 @@ import {
 	PropertyDeclaration,
 	PropertySignature,
 	Symbol,
+	SyntaxKind,
 	TypeChecker,
 	TypeElement,
 } from 'typescript';
@@ -79,6 +82,10 @@ function isDecoratorOfType(decorator: Decorator, types: string[]) {
 		isIdentifier(decorator.expression.expression) &&
 		types.includes(decorator.expression.expression.text)
 	);
+}
+
+function isExportedDeclaration(declaration: NamedDeclaration) {
+	return isInterfaceDeclaration(declaration) && declaration.modifiers && declaration.modifiers.some((m) => m.kind === SyntaxKind.ExportKeyword);
 }
 
 function getDecoratorOfType(node: Node, decoratorType: string): Decorator | undefined {
@@ -150,11 +157,13 @@ class APIDocVisitor {
 		const { deprecated, since } = getJsDocTags(symbol);
 		const className = interfaceDeclaration.name.text;
 		const members = this.visitMembers(interfaceDeclaration.members);
+		const baseClassNames = this.visitExtendHeritageClauses(interfaceDeclaration.heritageClauses);
 
 		return [
 			{
 				fileName,
 				className,
+				baseClassNames,
 				description,
 				deprecated,
 				since,
@@ -173,6 +182,7 @@ class APIDocVisitor {
 		const decorators = getDecorators(classDeclaration);
 		let directiveInfo;
 		let members;
+		let baseClassNames: string[];
 
 		// If there is no top documentation comment, consider it private, we skip it.
 		if (!description) {
@@ -185,11 +195,13 @@ class APIDocVisitor {
 				if (isDecoratorOfType(decorator, ['Directive', 'Component'])) {
 					directiveInfo = this.visitDirectiveDecorator(decorator);
 					members = this.visitMembers(classDeclaration.members);
+					baseClassNames = this.visitExtendHeritageClauses(classDeclaration.heritageClauses);
 
 					return [
 						{
 							fileName,
 							className,
+							baseClassNames,
 							description,
 							deprecated,
 							since,
@@ -206,11 +218,13 @@ class APIDocVisitor {
 				// SERVICE
 				else if (isDecoratorOfType(decorator, ['Injectable'])) {
 					members = this.visitMembers(classDeclaration.members);
+					baseClassNames = this.visitExtendHeritageClauses(classDeclaration.heritageClauses);
 
 					return [
 						{
 							fileName,
 							className,
+							baseClassNames,
 							description,
 							deprecated,
 							since,
@@ -225,11 +239,13 @@ class APIDocVisitor {
 		// CLASS
 		else if (description) {
 			members = this.visitMembers(classDeclaration.members);
+			baseClassNames = this.visitExtendHeritageClauses(classDeclaration.heritageClauses);
 
 			return [
 				{
 					fileName,
 					className,
+					baseClassNames,
 					description,
 					deprecated,
 					since,
@@ -379,6 +395,22 @@ class APIDocVisitor {
 			...this.visitInputOrOutputDeclaration(property, decorator),
 			defaultValue: property.initializer?.getText(),
 		};
+	}
+
+	visitExtendHeritageClauses(heritageClauses: NodeArray<HeritageClause>) {
+		if (!heritageClauses?.length) {
+			return [];
+		}
+
+		return heritageClauses
+			.filter(({ token }) => token === SyntaxKind.ExtendsKeyword)
+			.flatMap(({ types }) => types)
+			.filter((t) => {
+				const symbol = isExpressionWithTypeArguments(t) && this.typeChecker.getSymbolAtLocation(t.expression);
+				// Ignore declarations that are not exported from the same source file
+				return symbol?.declarations.some(isExportedDeclaration);
+			})
+			.map((t) => t.expression.getText());
 	}
 
 	visitNamedDeclaration(declaration: NamedDeclaration) {
