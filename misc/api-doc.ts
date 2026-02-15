@@ -8,6 +8,7 @@ import {
 	Expression,
 	getCombinedModifierFlags,
 	getDecorators,
+	getJSDocCommentsAndTags,
 	getJSDocTags,
 	InterfaceDeclaration,
 	isCallExpression,
@@ -33,13 +34,14 @@ import {
 	PropertyDeclaration,
 	PropertySignature,
 	Symbol,
+	SymbolDisplayPart,
 	TypeChecker,
 	TypeElement,
 } from 'typescript';
 
 import { marked } from 'marked';
 
-function displayPartsToHtml(displayParts: any): string {
+function displayPartsToHtml(displayParts: SymbolDisplayPart[]): string {
 	return marked(displayPartsToString(displayParts), { gfm: true }).trim();
 }
 
@@ -382,11 +384,20 @@ class APIDocVisitor {
 	}
 
 	visitNamedDeclaration(declaration: NamedDeclaration) {
-		const symbol = this.typeChecker.getSymbolAtLocation(declaration.name);
+		// For override methods, TODO + TESTS
+		const jsDoc = getJSDocCommentsAndTags(declaration)[0];
+		let commentParts: SymbolDisplayPart[];
+		if (typeof jsDoc?.comment === 'string') {
+			commentParts = [{ kind: 'text', text: jsDoc.comment }];
+		} else {
+			const symbol = this.typeChecker.getSymbolAtLocation(declaration.name);
+			commentParts = symbol.getDocumentationComment(this.typeChecker);
+		}
+
 		return {
 			name: declaration.name.getText(),
 			type: this.visitType(declaration),
-			description: displayPartsToHtml(symbol.getDocumentationComment(this.typeChecker)),
+			description: displayPartsToHtml(commentParts),
 		};
 	}
 
